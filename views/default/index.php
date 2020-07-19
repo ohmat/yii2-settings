@@ -60,7 +60,8 @@ $this->params['breadcrumbs'][] = $this->title;
                 [
                     'header' => Yii::t('yii2mod.settings', 'Actions'),
                     'class' => 'yii\grid\ActionColumn',
-                    'template' => '{update}{delete}',
+                    'buttons' => common\helpers\Html::getActionsBT4(),
+                    'template' => '{update} {delete}',
                 ],
             ],
         ]
