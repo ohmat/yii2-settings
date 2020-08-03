@@ -7,6 +7,7 @@ use yii\filters\VerbFilter;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii2mod\editable\EditableAction;
+use yii2mod\settings\models\enumerables\SettingStatus;
 use yii2mod\settings\models\SettingModel;
 
 /**
@@ -42,6 +43,11 @@ class DefaultController extends Controller
     public $modelClass = 'yii2mod\settings\models\SettingModel';
 
     /**
+     * @var string path to index view file, which is used in admin panel
+     */
+    public $editView = '@vendor/yii2mod/yii2-settings/views/default/edit';
+
+    /**
      * Returns a list of behaviors that this component should behave as.
      *
      * @return array
@@ -53,6 +59,7 @@ class DefaultController extends Controller
                 'class' => VerbFilter::class,
                 'actions' => [
                     'index' => ['get'],
+                    'edit' => ['get', 'post'],
                     'create' => ['get', 'post'],
                     'update' => ['get', 'post'],
                     'delete' => ['post'],
@@ -90,6 +97,37 @@ class DefaultController extends Controller
         return $this->render($this->indexView, [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
+        ]);
+    }
+    /**
+     * Lists all Settings.
+     *
+     * @return mixed
+     */
+    public function actionEdit()
+    {
+        $searchModel = Yii::createObject($this->searchClass)->find()->where(['status'=>SettingStatus::ACTIVE])->all();
+
+        $post = Yii::$app->request->post();
+        if(!empty($post) && !empty($post["Settings"])){
+            foreach ($post["Settings"] as $section=>$key){
+                foreach ($key as $k=>$newSettings){
+                    $s =$this->modelClass::find()->where(['section'=>$section,'key'=>$k])->one();
+                    if(!empty($s->value) && $s->value!=$newSettings){
+                        $s->value = trim($newSettings);
+                        try{
+                            $s->update();
+                        }catch (Exception $e) {
+                            Yii::$app->session->setFlash('error', $e->getMessage());
+                        }
+                    }
+                }
+            }
+            Yii::$app->session->setFlash('success', Yii::t('yii2mod.settings', 'Setting has been updated.'));
+            $this->redirect('/settings/default/edit');
+        }
+        return $this->render($this->editView, [
+            'searchModel' => $searchModel,
         ]);
     }
 
@@ -177,4 +215,5 @@ class DefaultController extends Controller
             throw new NotFoundHttpException(Yii::t('yii2mod.settings', 'The requested page does not exist.'));
         }
     }
+
 }
